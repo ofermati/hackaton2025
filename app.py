@@ -1,81 +1,65 @@
 import streamlit as st
 import json
-from pathlib import Path
 import pandas as pd
+from pathlib import Path
 from streamlit_autorefresh import st_autorefresh
 
-st.set_page_config(page_title="זיהוי התקף", layout="centered")
+st.set_page_config(page_title="ניטור חכם", layout="centered")
 
+# עיצוב הכפתור בצד ימין למעלה
+col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 1, 1, 1, 1])
+with col6:
+    if st.button("🌙"):
+        st.switch_page("Night_Mode.py")
+
+
+st.title("📡 ניטור בזמן אמת")
+
+# מרענן את העמוד כל 1 שנייה (1000 מילישניות)
+st_autorefresh(interval=1000, key="refresh")
+
+# קובץ נתונים
 json_path = Path("status.json")
-history_path = Path("history.json")
 
-st.title("💓 ניטור התקף חרדה - בזמן אמת")
-
-# ניהול מצב התקף קודם
-if "alert_triggered" not in st.session_state:
-    st.session_state.alert_triggered = False
-if "calm_detected" not in st.session_state:
-    st.session_state.calm_detected = False
-if "attack_start_time" not in st.session_state:
-    st.session_state.attack_start_time = None
-if "attack_end_time" not in st.session_state:
-    st.session_state.attack_end_time = None
-
-# כפתור איפוס
-if st.button("🔄 סיימתי את התרגול, איפוס מצב"):
-    st.session_state.alert_triggered = False
-    st.session_state.calm_detected = False
-    st.session_state.attack_start_time = None
-    st.session_state.attack_end_time = None
-    st.success("המערכת אופסה. ברוך השב!")
-
-# קריאה ועדכון נתונים
+# קריאה מהקובץ
 if json_path.exists():
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    heart_rate = data.get("heart_rate")
-    attack = data.get("attack_detected")
-    timestamp = data.get("timestamp")
+    hr = data["heart_rate"]
+    sweat = data["sweat_level"]
+    move = data["movement"]
+    attack = data["attack_detected"]
+    timestamp = data["timestamp"]
 
-    # שמירת היסטוריה לגרף
-    if history_path.exists():
-        with open(history_path, "r", encoding="utf-8") as f:
-            data_history = json.load(f)
+    # תצוגה
+    st.markdown(f"**עודכן בתאריך:** {timestamp}")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("💓 דופק", f"{hr} bpm", delta=None)
+    col2.metric("💦 הזעה", f"{sweat:.2f}", delta=None)
+    col3.metric("🏃 תנועה", move)
+
+    # נשתמש במשתנה לזיהוי האם התקף התרחש בעבר
+    if "was_attack" not in st.session_state:
+        st.session_state.was_attack = False
+
+    if attack:
+        st.session_state.was_attack = True
+        st.error("המדדים השתנו, בוא ננסה להרגע ביחד")
+            # טקסט ופרטי השיר
+        st.markdown("### 🎶 עכשיו מתנגן:")
+        st.markdown("*Bohemian Rhapsody - Queen*")
+        st.audio("https://drive.google.com/uc?export=download&id=1sShXwsYsx0uUF3LrSXUimi1W4RBNCVbS")
+        st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
+
+    elif st.session_state.was_attack:
+        st.success("🌿 המצב התייצב! כל הכבוד.")
+        st.audio("https://drive.google.com/uc?export=download&id=1sShXwsYsx0uUF3LrSXUimi1W4RBNCVbS")
+        st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
+        if st.button("📊 עבור לדף הסטטיסטיקות"):
+            st.switch_page("Statistics_Dashboard.py")  # ודא שהשם תואם לשם הקובץ שלך
     else:
-        data_history = []
+        st.success("✅ המצב רגוע")
 
-    data_history.append({"זמן": timestamp, "דופק": heart_rate})
-    with open(history_path, "w", encoding="utf-8") as f:
-        json.dump(data_history[-50:], f, ensure_ascii=False, indent=2)
 
-    st.metric("💓 דופק נוכחי", f"{heart_rate} bpm")
-    st.caption(f"עודכן ב־{timestamp}")
-
-    if len(data_history) > 1:
-        df = pd.DataFrame(data_history[-30:])
-        st.line_chart(df.set_index("זמן"))
-
-    # הפעלת תגובה ראשונה רק פעם אחת
-    if attack and not st.session_state.alert_triggered:
-        st.session_state.alert_triggered = True
-        st.session_state.attack_start_time = timestamp
-
-    # זיהוי הרגעה לאחר התקף
-    if st.session_state.alert_triggered and not attack and not st.session_state.calm_detected:
-        st.session_state.calm_detected = True
-        st.session_state.attack_end_time = timestamp
-
-# אזור קבוע - תגובת הרגעה ראשונה
-if st.session_state.alert_triggered:
-    st.warning("⚠️ התקף זוהה! מופעלת תגובת הרגעה...")
-    st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
-    st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
-
-# אזור הרגעה מלאה עם פרטי זמן התקף והמעבר לסטטיסטיקות
-if st.session_state.calm_detected:
-    st.success("🌿 נראה שהמערכת יציבה. המשך כך, אתה עושה עבודה מעולה!")
-    if st.session_state.attack_start_time and st.session_state.attack_end_time:
-        st.markdown(f"⏱️ זמן התקף: {st.session_state.attack_start_time} - {st.session_state.attack_end_time}")
-    if st.button("📊 עבור לדף סטטיסטיקות"):
-        st.switch_page("Statistics_Dashboard.py")
