@@ -1,7 +1,7 @@
 {
-  "heart_rate": 79,
-  "sweat_level": 0.2,
-  "movement": "very low",
+  "heart_rate": 65,
+  "sweat_level": 0.48,
+  "movement": "low",
   "attack_detected": false,
-  "timestamp": "2025-04-03 16:45:48"
+  "timestamp": "2025-04-03 16:56:31"
 }

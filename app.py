@@ -49,13 +49,17 @@ if json_path.exists():
         st.error("המדדים השתנו, בוא ננסה להרגע ביחד")
             # טקסט ופרטי השיר
         st.markdown("### 🎶 עכשיו מתנגן:")
-        st.markdown("*Bohemian Rhapsody - Queen*")
-        st.audio("https://drive.google.com/uc?export=download&id=1sShXwsYsx0uUF3LrSXUimi1W4RBNCVbS")
+        st.markdown("*How Far I'll Go*")
+        with open("How Far I'll Go.mp3", "rb") as audio_file:
+            st.audio(audio_file, format="audio/mp3")
         st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
 
     elif st.session_state.was_attack:
         st.success("🌿 המצב התייצב! כל הכבוד.")
-        st.audio("https://drive.google.com/uc?export=download&id=1sShXwsYsx0uUF3LrSXUimi1W4RBNCVbS")
+        st.markdown("### 🎶 עכשיו מתנגן:")
+        st.markdown("*How Far I'll Go*")
+        with open("How Far I'll Go.mp3", "rb") as audio_file:
+            st.audio(audio_file, format="audio/mp3")
         st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
         if st.button("📊 עבור לדף הסטטיסטיקות"):
             st.switch_page("Statistics_Dashboard.py")  # ודא שהשם תואם לשם הקובץ שלך
