@@ -3,6 +3,23 @@ import json
 from pathlib import Path
 import pandas as pd
 import time
+from twilio.rest import Client  # ייבוא ספריית Twilio
+
+# הגדרת Twilio
+account_sid = 'AC766a35c9839c94966ce03708f38aa1bc'
+auth_token = '72bcb527a55ffbe1ec597290f6424798'
+client = Client(account_sid, auth_token)
+
+
+def send_whatsapp_message():
+    """ פונקציה לשליחת הודעה ב-WhatsApp במקרה של התקף """
+    message = client.messages.create(
+        body="⚠️ זוהה התקף חרדה! אנא בדוק את המצב מיד.",  # תוכן ההודעה
+        from_='whatsapp:+14155238886',  # מספר ה-Sandbox של Twilio
+        to='whatsapp:+972543344268'  # מספר הנמען
+    )
+    print(f"Message SID: {message.sid}")  # הדפסת ה-SID של ההודעה לאימות
+
 
 st.set_page_config(page_title="זיהוי התקף", layout="centered")
 
@@ -60,5 +77,6 @@ for _ in range(1):
             # הפעלת תגובה ראשונה רק פעם אחת
             if attack and not st.session_state.alert_triggered:
                 st.session_state.alert_triggered = True
+                send_whatsapp_message()  # קריאה לפונקציה ששולחת הודעה
                 st.rerun()
     time.sleep(0.5)
