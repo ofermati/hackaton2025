@@ -1,6 +1,5 @@
 import streamlit as st
 import json
-from pathlib import Path
 import pandas as pd
 import time
 from twilio.rest import Client  # ייבוא ספריית Twilio
@@ -20,63 +19,79 @@ def send_whatsapp_message():
     )
     print(f"Message SID: {message.sid}")  # הדפסת ה-SID של ההודעה לאימות
 
+from pathlib import Path
+from streamlit_autorefresh import st_autorefresh
 
-st.set_page_config(page_title="זיהוי התקף", layout="centered")
+st.set_page_config(page_title="ניטור חכם", layout="centered")
 
-st.title("💓 ניטור התקף חרדה - בזמן אמת")
+# עיצוב הכפתור בצד ימין למעלה
+col1, col2, col3, col4, col5, col6 = st.columns([1, 1, 1, 1, 1, 1])
+with col6:
+    if st.button("🌙"):
+        st.switch_page("Night_Mode.py")
 
+
+st.title("📡 ניטור בזמן אמת")
+
+# מרענן את העמוד כל 1 שנייה (1000 מילישניות)
+st_autorefresh(interval=1000, key="refresh")
+
+# קובץ נתונים
 json_path = Path("status.json")
-placeholder = st.empty()  # אזור תוכן משתנה
-history_path = Path("history.json")
 
-# ניהול מצב התקף קודם
-if "alert_triggered" not in st.session_state:
-    st.session_state.alert_triggered = False
+# קריאה מהקובץ
+if json_path.exists():
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-# כפתור איפוס
-if st.button("🔄 סיימתי את התרגול, איפוס מצב"):
-    st.session_state.alert_triggered = False
-    st.success("המערכת אופסה. ברוך השב!")
+    hr = data["heart_rate"]
+    sweat = data["sweat_level"]
+    move = data["movement"]
+    attack = data["attack_detected"]
+    timestamp = data["timestamp"]
 
-# אזור קבוע - תגובת הרגעה ראשונה
-if st.session_state.alert_triggered:
-    st.warning("⚠️ התקף זוהה! מופעלת תגובת הרגעה...")
-    st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
-    st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
-    st.info("🌿 נראה שהמערכת יציבה. המשך כך, אתה עושה עבודה מעולה!")
+    # תצוגה
+    st.markdown(f"**עודכן בתאריך:** {timestamp}")
 
-# לולאת רענון של אזור הדופק בלבד (לייב)
-for _ in range(1):
-    if json_path.exists():
-        with open(json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+    col1, col2, col3 = st.columns(3)
+    col1.metric("💓 דופק", f"{hr} bpm", delta=None)
+    col2.metric("💦 הזעה", f"{sweat:.2f}", delta=None)
+    col3.metric("🏃 תנועה", move)
 
-        heart_rate = data.get("heart_rate")
-        attack = data.get("attack_detected")
-        timestamp = data.get("timestamp")
+    # נשתמש במשתנה לזיהוי האם התקף התרחש בעבר
+    if "was_attack" not in st.session_state:
+        st.session_state.was_attack = False
 
-        # שמירת היסטוריה לגרף
-        if history_path.exists():
-            with open(history_path, "r", encoding="utf-8") as f:
-                data_history = json.load(f)
-        else:
-            data_history = []
+    if attack:
+        st.session_state.was_attack = True
+        st.error("המדדים השתנו, בוא ננסה להרגע ביחד")
+            # טקסט ופרטי השיר
+        st.markdown("### 🎶 עכשיו מתנגן:")
+        st.markdown("*How Far I'll Go*")
+        with open("How Far I'll Go.mp3", "rb") as audio_file:
+            st.audio(audio_file, format="audio/mp3")
+        st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
 
-        data_history.append({"זמן": timestamp, "דופק": heart_rate})
-        with open(history_path, "w", encoding="utf-8") as f:
-            json.dump(data_history[-50:], f, ensure_ascii=False, indent=2)
+    elif st.session_state.was_attack:
+        st.success("🌿 המצב התייצב! כל הכבוד.")
+        st.markdown("### 🎶 עכשיו מתנגן:")
+        st.markdown("*How Far I'll Go*")
+        with open("How Far I'll Go.mp3", "rb") as audio_file:
+            st.audio(audio_file, format="audio/mp3")
+        st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")
+        if st.button("📊 עבור לדף הסטטיסטיקות"):
+            st.switch_page("Statistics_Dashboard.py")  # ודא שהשם תואם לשם הקובץ שלך
+    else:
+        st.success("✅ המצב רגוע")
 
-        with placeholder.container():
-            st.metric("💓 דופק נוכחי", f"{heart_rate} bpm")
-            st.caption(f"עודכן ב־{timestamp}")
 
-            if len(data_history) > 1:
-                df = pd.DataFrame(data_history[-30:])
-                st.line_chart(df.set_index("זמן"))
+        if len(data_history) > 1:
+            df = pd.DataFrame(data_history[-30:])
+            st.line_chart(df.set_index("זמן"))
 
-            # הפעלת תגובה ראשונה רק פעם אחת
-            if attack and not st.session_state.alert_triggered:
-                st.session_state.alert_triggered = True
-                send_whatsapp_message()  # קריאה לפונקציה ששולחת הודעה
-                st.rerun()
+        # הפעלת תגובה ראשונה רק פעם אחת
+        if attack and not st.session_state.alert_triggered:
+            st.session_state.alert_triggered = True
+            send_whatsapp_message()  # קריאה לפונקציה ששולחת הודעה
+            st.rerun()
     time.sleep(0.5)

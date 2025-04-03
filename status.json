@@ -1,5 +1,7 @@
 {
-  "heart_rate": 128,
-  "attack_detected": true,
-  "timestamp": "2025-04-03 13:31:19"
+  "heart_rate": 65,
+  "sweat_level": 0.48,
+  "movement": "low",
+  "attack_detected": false,
+  "timestamp": "2025-04-03 16:56:31"
 }
