@@ -1,48 +1,32 @@
 import streamlit as st
+import json
 import time
+from pathlib import Path
 
 st.set_page_config(page_title="זיהוי התקף", layout="centered")
+st.title("💓 ניטור התקף חרדה - בזמן אמת")
 
-st.title("💓 אפליקציית התמודדות עם התקף חרדה")
+json_path = Path("status.json")
 
-st.write("ברגע שהמערכת מזהה סימנים מוקדמים, היא מציגה את המסך הזה כדי לסייע למשתמש.")
+placeholder = st.empty()  # מקום להודעות
 
-# כפתור הפעלה
-if st.button("🔍 הדגם זיהוי התקף"):
-    st.warning("⚠ סימנים מוקדמים להתקף זוהו!")
-    time.sleep(1)
-    
-    # שלב 1: טקסט מרגיע
-    st.markdown("### 💬 את לא לבד.\n#### זה יעבור. בואי ננשום יחד.")
-    
-    # שלב 2: תרגול נשימה מודרך
-    st.markdown("---")
-    st.markdown("### 🌬 תרגול נשימה מודרך")
-    
-    for i in range(3):
-        st.markdown("#### שאיפה... 🫁")
-        time.sleep(4)
-        st.markdown("#### החזקה...")
-        time.sleep(2)
-        st.markdown("#### נשיפה איטית... 😌")
-        time.sleep(6)
-        st.markdown("---")
-    
-    # שלב 3: הודעה לאיש קשר
-    st.markdown("### 📲 התרעה לאיש קשר חירום תישלח בעוד 10 שניות...")
-    cancel = st.button("❌ בטלי שליחת הודעה")
-    
-    if not cancel:
-        time.sleep(10)
-        if not st.session_state.get("cancelled", False):
-            st.success("הודעה נשלחה למיכל. 📤")
+while True:
+    if json_path.exists():
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        heart_rate = data.get("heart_rate")
+        attack = data.get("attack_detected")
+        timestamp = data.get("timestamp")
+
+        st.metric("💓 דופק", heart_rate)
+        st.caption(f"עודכן ב־{timestamp}")
+
+        if attack:
+            placeholder.warning("⚠️ התקף זוהה! מפעיל תגובה מרגיעה...")
+            st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
+            st.video("https://www.youtube.com/watch?v=1ZYbU82GVz4")  # מדיטציה
+            break  # מפסיקים את הלולאה אחרי זיהוי
         else:
-            st.info("השליחה בוטלה.")
-    else:
-        st.session_state["cancelled"] = True
-        st.info("השליחה בוטלה.")
-
-st.markdown("---")
-st.caption("גרסה לדמו בלבד | האקתון שיקום 2025")
-
-
+            placeholder.success("✅ מצב תקין")
+    time.sleep(2)
